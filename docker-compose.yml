@@ -1,0 +1,63 @@
+version: '3'
+
+services:
+  api:
+    depends_on:
+      - db
+    image: golang:latest
+    ports:
+      - "9080:9080"
+    working_dir: /go/src/webserver
+    command: go run main.go
+    volumes:
+      - ./api:/go/src
+    links:
+      - db
+    networks: 
+      - backend
+
+  db:
+    image: mysql:latest
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./data:/data/db
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_ROOT_HOST: '%'
+    networks: 
+      - backend
+
+  mail:
+    depends_on:
+      - appplication
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    links:
+      - appplication
+    networks: 
+      - backend
+
+  frontend:
+    depends_on:
+      - appplication
+      - db
+    # image: node:latest
+    build: 
+      context: ./auth
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    ports:
+      - "3001:3000"
+    links:
+      - appplication
+      - db
+      - mail
+    networks: 
+      - backend
+
+networks:
+  backend:
+    driver: "bridge"
